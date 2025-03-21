@@ -1,0 +1,12 @@
+# Visual Studio
+.vs/
+*.ipch
+*.suo
+*.VC.db
+*.pdb
+*.obj
+*.exe
+*.log
+x64/
+Debug/
+Release/
