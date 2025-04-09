@@ -168,8 +168,21 @@ private:
 
 public:
     void addMessage(shared_ptr<Message> msg) {
+        for (const auto& m : messages) {
+            if (m->getId() == msg->getId()) {
+                cout << "|  Повідомлення з таким ID вже є  |" << endl;
+                cout << "+---------------------------------+" << endl;
+                return;
+            }
+        }
         messages.insert(msg);
+
+        // Після додавання оновлюємо глобальний лічильник
+        if (msg->getId() > Message::getGlobalCounter()) {
+            Message::setGlobalCounter(msg->getId());
+        }
     }
+
 
     void displayMessages() const {
         if (messages.empty()) {
