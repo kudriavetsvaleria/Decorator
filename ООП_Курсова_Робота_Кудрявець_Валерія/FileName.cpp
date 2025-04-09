@@ -204,9 +204,6 @@ public:
 
                 messages.erase(msg);
                 messages.insert(editedMsg);
-
-                cout << "|   Повідомлення відредаговано!   |" << endl;
-                cout << "+---------------------------------+" << endl;
                 break;
             }
         }
@@ -216,6 +213,69 @@ public:
             cout << "+---------------------------------+" << endl;
         }
     }
+
+    void deleteMessageById(int idToDelete) {
+        bool found = false;
+        for (auto it = messages.begin(); it != messages.end(); ++it) {
+            if ((*it)->getId() == idToDelete) {
+                messages.erase(it);
+                found = true;
+                cout << "|  Повідомлення видалено успішно  |" << endl;
+                cout << "+---------------------------------+" << endl;
+                return;
+            }
+        }
+        if (!found) {
+            cout << "|  Повідомлення з таким ID нема   |" << endl;
+            cout << "+---------------------------------+" << endl;
+        }
+    }
+
+    void showStatistics() const {
+        int totalMessages = messages.size();
+        int totalWords = 0, totalChars = 0;
+        int boldWords = 0, italicWords = 0;
+
+        for (const auto& msg : messages) {
+            string txt = msg->getText();
+            totalChars += txt.length();
+
+            stringstream ss(txt);
+            string word;
+            while (ss >> word) {
+                totalWords++;
+
+                // Якщо слово починається і закінчується на * або _
+                if (word.size() >= 2) {
+                    if (word.front() == '*' && word.back() == '*')
+                        boldWords++;
+                    else if (word.front() == '_' && word.back() == '_')
+                        italicWords++;
+                }
+
+                // Пошук багатослівних конструкцій типу "*жирний текст*"
+                // через підрахунок кількості зірочок/підкреслень
+                int boldCount = count(txt.begin(), txt.end(), '*');
+                int italicCount = count(txt.begin(), txt.end(), '_');
+
+                // Кожна пара символів формує один блок форматування
+                boldWords += boldCount / 2;
+                italicWords += italicCount / 2;
+                break;
+            }
+        }
+
+        cout << "|        Статистика чату:         |" << endl;
+        cout << "+---------------------------------+" << endl;
+        cout << "| Всього повідомлень          " << setw(3) << totalMessages << " |" << endl;
+        cout << "| Загальна кількість слів     " << setw(3) << totalWords << " |" << endl;
+        cout << "| Фрагментів жирного          " << setw(3) << boldWords << " |" << endl;
+        cout << "| Фрагментів курсиву          " << setw(3) << italicWords << " |" << endl;
+        cout << "| Загальна кількість символів " << setw(3) << totalChars << " |" << endl;
+        cout << "+---------------------------------+" << endl;
+    }
+
+
 
     void saveToFile() {
         ofstream file(filename);
@@ -289,10 +349,11 @@ void showMenu() {
     cout << "|  5  | Редагувати повідомлення   |" << endl;
     cout << "|  6  | Очистити переписку        |" << endl;
     cout << "|  7  | Пошук повідомлення        |" << endl;
-    cout << "|  8  | Вихід                     |" << endl;
+    cout << "|  8  | Статистика чату           |" << endl;
+    cout << "|  9  | Видалити повідомлення     |" << endl;
+    cout << "| 10  | Вихід                     |" << endl;
     cout << "+---------------------------------+" << endl;
 }
-
 
 
 int main() {
@@ -353,9 +414,12 @@ int main() {
             cin >> id;
             cin.ignore();
             storage.editMessageById(id);
+            system("cls");
+            showMenu();
+            cout << "|   Повідомлення відредаговано!   |" << endl;
+            cout << "+---------------------------------+" << endl;
             break;
         }
-
         case 6:
             system("cls");
             showMenu();
@@ -372,16 +436,39 @@ int main() {
             storage.searchMessages(keyword);
             break;
         }
-        case 8:
+        case 8: {
             system("cls");
+            showMenu();
+            storage.showStatistics();
+            break;
+        }
+        case 9: {
+            system("cls");
+            showMenu();
+            int id;
+            cout << "Введіть ID повідомлення для видалення: ";
+            cin >> id;
+            cin.ignore();
+            storage.deleteMessageById(id);
+            break;
+        }
+        case 10:
+            system("cls");
+            char saveChoice;
+            cout << "Бажаєте зберегти перед виходом? (Y/N): ";
+            cin >> saveChoice;
+            if (saveChoice == 'Y' || saveChoice == 'y') {
+                storage.saveToFile();
+            }
             cout << "Вихід..." << endl;
             break;
+
         default:
             cout << "Некоректний ввід, спробуйте знову" << endl;
         }
 
 
-    } while (choice != 8);
+    } while (choice != 10);
 
 
 
