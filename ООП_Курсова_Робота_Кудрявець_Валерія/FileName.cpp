@@ -189,7 +189,7 @@ public:
             cout << "Чат порожній. Додайте повідомлення!" << endl;
             return;
         }
-        cout << "|         Історія чату:           |" << endl;
+        cout << "|         Історія чату            |" << endl;
         cout << "+---------------------------------+" << endl;
         for (const auto& msg : messages) {
             msg->display();
@@ -253,32 +253,24 @@ public:
             string txt = msg->getText();
             totalChars += txt.length();
 
+            // Рахуємо слова
             stringstream ss(txt);
             string word;
             while (ss >> word) {
                 totalWords++;
-
-                // Якщо слово починається і закінчується на * або _
-                if (word.size() >= 2) {
-                    if (word.front() == '*' && word.back() == '*')
-                        boldWords++;
-                    else if (word.front() == '_' && word.back() == '_')
-                        italicWords++;
-                }
-
-                // Пошук багатослівних конструкцій типу "*жирний текст*"
-                // через підрахунок кількості зірочок/підкреслень
-                int boldCount = count(txt.begin(), txt.end(), '*');
-                int italicCount = count(txt.begin(), txt.end(), '_');
-
-                // Кожна пара символів формує один блок форматування
-                boldWords += boldCount / 2;
-                italicWords += italicCount / 2;
-                break;
             }
+
+            // Рахуємо * і _ по всьому тексту
+            int boldCount = count(txt.begin(), txt.end(), '*');
+            int italicCount = count(txt.begin(), txt.end(), '_');
+
+            boldWords += boldCount / 2;
+            italicWords += italicCount / 2;
         }
 
-        cout << "|        Статистика чату:         |" << endl;
+
+
+        cout << "|        Статистика чату          |" << endl;
         cout << "+---------------------------------+" << endl;
         cout << "| Всього повідомлень          " << setw(3) << totalMessages << " |" << endl;
         cout << "| Загальна кількість слів     " << setw(3) << totalWords << " |" << endl;
@@ -293,7 +285,7 @@ public:
     void saveToFile() {
         ofstream file(filename);
         for (const auto& msg : messages) {
-            file << msg->getId() << "|" << msg->getType() << "|" << msg->getText() << endl;
+            file << "ID: "  << msg->getId() << "|" << msg->getText() << endl;
         }
         cout << "|       Переписка збережена!      |" << endl;
         cout << "+---------------------------------+" << endl;
@@ -330,8 +322,9 @@ public:
         bool found = false;
 
         for (const auto& msg : messages) {
+
             if (msg->getText().find(keyword) != string::npos) {
-                cout << "|        Результати пошуку:       |" << endl;
+                cout << "|        Результати пошуку        |" << endl;
                 cout << "+---------------------------------+" << endl;
                 msg->display();
                 found = true;
@@ -362,14 +355,16 @@ void showMenu() {
     cout << "|  5  | Редагувати повідомлення   |" << endl;
     cout << "|  6  | Очистити переписку        |" << endl;
     cout << "|  7  | Пошук повідомлення        |" << endl;
-    cout << "|  8  | Статистика чату           |" << endl;
-    cout << "|  9  | Видалити повідомлення     |" << endl;
-    cout << "| 10  | Вихід                     |" << endl;
+    cout << "|  8  | Видалити повідомлення     |" << endl;
+    cout << "|  9  | Статистика чату           |" << endl;
+    cout << "|  0  | Вихід                     |" << endl;
     cout << "+---------------------------------+" << endl;
 }
 
 
 int main() {
+    SetConsoleOutputCP(1251);
+    SetConsoleCP(1251);
     setConsoleColor(8);
     //shared_ptr<Message> msg = make_shared<SimpleMessage>("Привет, это *жирный* и _курсив_ текст!");
     //msg->display();
@@ -399,7 +394,10 @@ int main() {
             cout << "Введіть текст повідомлення: ";
             getline(cin, text);
             shared_ptr<Message> msg = make_shared<SimpleMessage>(text);
-
+            system("cls");
+            showMenu();
+            cout << "|      Повідомлення додано!       |" << endl;
+            cout << "+---------------------------------+" << endl;
             storage.addMessage(msg);
 
             break;
@@ -452,12 +450,6 @@ int main() {
         case 8: {
             system("cls");
             showMenu();
-            storage.showStatistics();
-            break;
-        }
-        case 9: {
-            system("cls");
-            showMenu();
             int id;
             cout << "Введіть ID повідомлення для видалення: ";
             cin >> id;
@@ -465,7 +457,13 @@ int main() {
             storage.deleteMessageById(id);
             break;
         }
-        case 10:
+        case 9: {
+            system("cls");
+            showMenu();
+            storage.showStatistics();
+            break;
+        }
+        case 0:
             system("cls");
             char saveChoice;
             cout << "Бажаєте зберегти перед виходом? (Y/N): ";
@@ -481,7 +479,7 @@ int main() {
         }
 
 
-    } while (choice != 10);
+    } while (choice != 0);
 
 
 
