@@ -294,43 +294,68 @@ public:
     void loadFromFile() {
         messages.clear();
         ifstream file(filename);
-        string line, type, text;
+
+        if (!file.is_open()) {
+            cout << "|        Файл не знайдено!        |" << endl;
+            cout << "+---------------------------------+" << endl;
+            return;
+        }
+
+        string line;
+        int loadedCount = 0;
 
         while (getline(file, line)) {
-            size_t firstDelim = line.find('|');
-            size_t secondDelim = line.find('|', firstDelim + 1);
+            size_t delim = line.find('|');
+            if (delim != string::npos) {
+                string idPart = line.substr(0, delim);      // "ID: 1"
+                string text = line.substr(delim + 1);       // "Текст повідомлення"
 
-            if (firstDelim != string::npos && secondDelim != string::npos) {
-                string idStr = line.substr(0, firstDelim);
-                type = line.substr(firstDelim + 1, secondDelim - firstDelim - 1);
-                text = line.substr(secondDelim + 1);
-
-                int idFromFile = stoi(idStr);
-
-                shared_ptr<Message> msg = make_shared<SimpleMessage>(text, idFromFile);
-                messages.insert(msg);
+                // Витягуємо число ID
+                size_t colon = idPart.find(':');
+                if (colon != string::npos) {
+                    string idStr = idPart.substr(colon + 1);
+                    try {
+                        int id = stoi(idStr);
+                        shared_ptr<Message> msg = make_shared<SimpleMessage>(text, id);
+                        messages.insert(msg);
+                        loadedCount++;
+                    }
+                    catch (...) {
+                        cout << "⚠️ Пропущено некоректний рядок: " << line << endl;
+                    }
+                }
             }
         }
 
-        cout << "|      Переписка завантажена!     |" << endl;
-        cout << "+---------------------------------+" << endl;
+        if (loadedCount == 0) {
+            cout << "|     Жодне повідомлення не було  |" << endl;
+            cout << "|          завантажено            |" << endl;
+            cout << "+---------------------------------+" << endl;
+        }
+        else {
+            cout << "|      Переписка завантажена!     |" << endl;
+            cout << "+---------------------------------+" << endl;
+        }
     }
 
 
-
     void searchMessages(const string& keyword) const {
-        bool found = false;
+        vector<shared_ptr<Message>> results;
 
         for (const auto& msg : messages) {
-
             if (msg->getText().find(keyword) != string::npos) {
-                cout << "|        Результати пошуку        |" << endl;
-                cout << "+---------------------------------+" << endl;
-                msg->display();
-                found = true;
+                results.push_back(msg);
             }
         }
-        if (!found) {
+
+        if (!results.empty()) {
+            cout << "|        Результати пошуку        |" << endl;
+            cout << "+---------------------------------+" << endl;
+            for (const auto& msg : results) {
+                msg->display();
+            }
+        }
+        else {
             cout << "|    Повідомлення не знайдено     |" << endl;
             cout << "+---------------------------------+" << endl;
         }
@@ -366,19 +391,29 @@ int main() {
     SetConsoleOutputCP(1251);
     SetConsoleCP(1251);
     setConsoleColor(8);
-    //shared_ptr<Message> msg = make_shared<SimpleMessage>("Привет, это *жирный* и _курсив_ текст!");
-    //msg->display();
-    MessageStorage storage;
-    int choice;
 
-    //system("pause");
-    
+    MessageStorage storage;
+
     showMenu();
-    do {
-                              
+    while (true) {
+        string input;
+        int choice = -1; // Безпечне значення за замовчуванням
+
         cout << "Виберіть дію: ";
-        cin >> choice;
-        cin.ignore();
+        getline(cin, input);
+
+        try {
+            choice = stoi(input);
+        }
+        catch (...) {
+            cout << "Некоректний вибір. Введіть число від 0 до 9" << endl;
+            continue;
+        }
+
+        if (choice < 0 || choice > 9) {
+            cout << "Введіть число в межах від 0 до 9" << endl;
+            continue;
+        }
 
         switch (choice) {
         case 1: {
@@ -386,44 +421,77 @@ int main() {
             showMenu();
             cout << "|            Підказка:            |" << endl;
             cout << "+---------------------------------+" << endl;
-            cout << "|  Щоб зробити жирний або курсив  | " << endl;
-            cout << "|   скористуйтеся форматуванням   | " << endl;
-            cout << "|       *Жирний* _Курсив_         | " << endl;
+            cout << "|  Щоб зробити жирний або курсив  |" << endl;
+            cout << "|   скористуйтеся форматуванням   |" << endl;
+            cout << "|       *Жирний* _Курсив_         |" << endl;
             cout << "+---------------------------------+" << endl;
+
             string text;
             cout << "Введіть текст повідомлення: ";
             getline(cin, text);
+
+            if (text.empty()) {
+                cout << "Повідомлення не може бути порожнім." << endl;
+                break;
+            }
+            if (text.find('|') != string::npos) {
+                cout << "Символ '|' заборонено!" << endl;
+                break;
+            }
+
             shared_ptr<Message> msg = make_shared<SimpleMessage>(text);
+
+            int stars = count(text.begin(), text.end(), '*');
+            int underscores = count(text.begin(), text.end(), '_');
+            if (stars % 2 != 0) {
+                cout << "⚠️ Увага: непарна кількість * — форматування може бути некоректним." << endl;
+            }
+            if (underscores % 2 != 0) {
+                cout << "⚠️ Увага: непарна кількість _ — форматування може бути некоректним." << endl;
+            }
+
+            storage.addMessage(msg);
             system("cls");
             showMenu();
             cout << "|      Повідомлення додано!       |" << endl;
             cout << "+---------------------------------+" << endl;
-            storage.addMessage(msg);
-
             break;
         }
+
         case 2:
             system("cls");
             showMenu();
             storage.displayMessages();
             break;
+
         case 3:
             system("cls");
             showMenu();
             storage.saveToFile();
             break;
+
         case 4:
             system("cls");
             showMenu();
             storage.loadFromFile();
             break;
+
         case 5: {
             system("cls");
             showMenu();
-            int id;
+            string inputId;
             cout << "Введіть ID повідомлення для редагування: ";
-            cin >> id;
-            cin.ignore();
+            getline(cin, inputId);
+            int id;
+
+            try {
+                id = stoi(inputId);
+            }
+            catch (...) {
+                cout << "Некоректний ID!" << endl;
+                break;
+            }
+
             storage.editMessageById(id);
             system("cls");
             showMenu();
@@ -431,57 +499,81 @@ int main() {
             cout << "+---------------------------------+" << endl;
             break;
         }
+
         case 6:
             system("cls");
             showMenu();
             storage.clearMessages();
             break;
+
         case 7: {
             system("cls");
             showMenu();
             string keyword;
             cout << "Введіть слово для пошуку: ";
             getline(cin, keyword);
+
+            if (keyword.empty()) {
+                cout << "Слово для пошуку не може бути порожнім!" << endl;
+                break;
+            }
+
             system("cls");
             showMenu();
             storage.searchMessages(keyword);
             break;
         }
+
         case 8: {
             system("cls");
             showMenu();
-            int id;
+            string inputId;
             cout << "Введіть ID повідомлення для видалення: ";
-            cin >> id;
-            cin.ignore();
+            getline(cin, inputId);
+            int id;
+            system("cls");
+            showMenu();
+            try {
+                id = stoi(inputId);
+            }
+            catch (...) {
+                cout << "Некоректний ID!" << endl;
+                break;
+            }
+
             storage.deleteMessageById(id);
             break;
         }
-        case 9: {
+
+        case 9:
             system("cls");
             showMenu();
             storage.showStatistics();
             break;
-        }
-        case 0:
+
+        case 0: {
             system("cls");
-            char saveChoice;
+            string saveInput;
             cout << "Бажаєте зберегти перед виходом? (Y/N): ";
-            cin >> saveChoice;
-            if (saveChoice == 'Y' || saveChoice == 'y') {
+            getline(cin, saveInput);
+
+            if (saveInput == "Y" || saveInput == "y") {
                 storage.saveToFile();
             }
-            cout << "Вихід..." << endl;
-            break;
+            else if (saveInput != "N" && saveInput != "n") {
+                cout << "Некоректний вибір. Введіть Y або N." << endl;
+                break;
+            }
 
-        default:
-            cout << "Некоректний ввід, спробуйте знову" << endl;
+            cout << "Вихід..." << endl;
+            return 0;
         }
 
-
-    } while (choice != 0);
-
-
+        default:
+            cout << "Некоректний вибір, спробуйте знову!" << endl;
+        }
+    }
 
     return 0;
 }
+
