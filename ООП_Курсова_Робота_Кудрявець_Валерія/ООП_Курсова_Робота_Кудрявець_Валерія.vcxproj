@@ -127,7 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="FileName.cpp" />
+    <ClCompile Include="MessageApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram1.cd" />

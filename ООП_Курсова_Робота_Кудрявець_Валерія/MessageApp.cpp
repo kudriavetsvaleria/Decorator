@@ -13,6 +13,23 @@ void setConsoleColor(WORD color) {
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
 }
 
+void showMenu() {
+    cout << "+---------------------------------+" << endl;
+    cout << "|              МЕНЮ               |" << endl;
+    cout << "+---------------------------------+" << endl;
+    cout << "|  1  | Додати повідомлення       |" << endl;
+    cout << "|  2  | Показати всі повідомлення |" << endl;
+    cout << "|  3  | Зберегти переписку        |" << endl;
+    cout << "|  4  | Завантажити переписку     |" << endl;
+    cout << "|  5  | Редагувати повідомлення   |" << endl;
+    cout << "|  6  | Очистити переписку        |" << endl;
+    cout << "|  7  | Пошук повідомлення        |" << endl;
+    cout << "|  8  | Видалити повідомлення     |" << endl;
+    cout << "|  9  | Статистика чату           |" << endl;
+    cout << "|  0  | Вихід                     |" << endl;
+    cout << "+---------------------------------+" << endl;
+}
+
 class Message {
 protected:
     static int global_id_counter;
@@ -67,7 +84,7 @@ public:
         : Message(txt, forcedId) {}
 
     void display() const override {
-        setConsoleColor(8);  // Серый цвет
+        setConsoleColor(8); 
         cout << "ID: " << getId() << " - ";
         string rawText = this->getText();
         applyFormatting(rawText);
@@ -156,7 +173,7 @@ public:
 
 struct MessageComparator {
     bool operator()(const shared_ptr<Message>& lhs, const shared_ptr<Message>& rhs) const {
-        return lhs->getId() < rhs->getId(); // тепер сортування буде по ID
+        return lhs->getId() < rhs->getId(); 
     }
 };
 
@@ -210,7 +227,7 @@ public:
                 shared_ptr<Message> editedMsg = make_shared<SimpleMessage>(newText, idToEdit);
 
 
-                // ✅ Правильний спосіб — через геттер
+                
                 if (idToEdit > Message::getGlobalCounter()) {
                     Message::setGlobalCounter(idToEdit);
                 }
@@ -222,6 +239,8 @@ public:
         }
 
         if (!found) {
+            system("cls");
+            showMenu();
             cout << "|  Повідомлення з таким ID нема   |" << endl;
             cout << "+---------------------------------+" << endl;
         }
@@ -233,12 +252,16 @@ public:
             if ((*it)->getId() == idToDelete) {
                 messages.erase(it);
                 found = true;
+                system("cls");
+                showMenu();
                 cout << "|  Повідомлення видалено успішно  |" << endl;
                 cout << "+---------------------------------+" << endl;
                 return;
             }
         }
         if (!found) {
+            system("cls");
+            showMenu();
             cout << "|  Повідомлення з таким ID нема   |" << endl;
             cout << "+---------------------------------+" << endl;
         }
@@ -307,10 +330,9 @@ public:
         while (getline(file, line)) {
             size_t delim = line.find('|');
             if (delim != string::npos) {
-                string idPart = line.substr(0, delim);      // "ID: 1"
-                string text = line.substr(delim + 1);       // "Текст повідомлення"
+                string idPart = line.substr(0, delim);      
+                string text = line.substr(delim + 1);       
 
-                // Витягуємо число ID
                 size_t colon = idPart.find(':');
                 if (colon != string::npos) {
                     string idStr = idPart.substr(colon + 1);
@@ -321,7 +343,7 @@ public:
                         loadedCount++;
                     }
                     catch (...) {
-                        cout << "⚠️ Пропущено некоректний рядок: " << line << endl;
+                        cout << "Пропущено некоректний рядок: " << line << endl;
                     }
                 }
             }
@@ -361,6 +383,7 @@ public:
         }
     }
 
+   
 
     void clearMessages() {
         messages.clear();
@@ -369,21 +392,128 @@ public:
     }
 };
 
-void showMenu() {
+
+void addMessageFlow(MessageStorage& storage) {
+    system("cls");
+    showMenu();
+    cout << "|            Підказка:            |" << endl;
     cout << "+---------------------------------+" << endl;
-    cout << "|              МЕНЮ               |" << endl;
+    cout << "|  Щоб зробити жирний або курсив  |" << endl;
+    cout << "|   скористуйтеся форматуванням   |" << endl;
+    cout << "|       *Жирний* _Курсив_         |" << endl;
     cout << "+---------------------------------+" << endl;
-    cout << "|  1  | Додати повідомлення       |" << endl;
-    cout << "|  2  | Показати всі повідомлення |" << endl;
-    cout << "|  3  | Зберегти переписку        |" << endl;
-    cout << "|  4  | Завантажити переписку     |" << endl;
-    cout << "|  5  | Редагувати повідомлення   |" << endl;
-    cout << "|  6  | Очистити переписку        |" << endl;
-    cout << "|  7  | Пошук повідомлення        |" << endl;
-    cout << "|  8  | Видалити повідомлення     |" << endl;
-    cout << "|  9  | Статистика чату           |" << endl;
-    cout << "|  0  | Вихід                     |" << endl;
+
+    string text;
+    cout << "Введіть текст повідомлення: ";
+    getline(cin, text);
+
+    if (text.empty()) {
+        cout << "Повідомлення не може бути порожнім." << endl;
+        return;
+    }
+    if (text.find('|') != string::npos) {
+        cout << "Символ '|' заборонено!" << endl;
+        return;
+    }
+
+    shared_ptr<Message> msg = make_shared<SimpleMessage>(text);
+
+    int stars = count(text.begin(), text.end(), '*');
+    int underscores = count(text.begin(), text.end(), '_');
+    if (stars % 2 != 0) {
+        cout << "Увага: непарна кількість * — форматування може бути некоректним." << endl;
+    }
+    if (underscores % 2 != 0) {
+        cout << "Увага: непарна кількість _ — форматування може бути некоректним." << endl;
+    }
+
+    storage.addMessage(msg);
+    system("cls");
+    showMenu();
+    cout << "|      Повідомлення додано!       |" << endl;
     cout << "+---------------------------------+" << endl;
+}
+
+void editMessageFlow(MessageStorage& storage) {
+    system("cls");
+    showMenu();
+    string inputId;
+    cout << "Введіть ID повідомлення для редагування: ";
+    getline(cin, inputId);
+    int id;
+
+    try {
+        id = stoi(inputId);
+    }
+    catch (...) {
+        cout << "Некоректний ID!" << endl;
+        return;
+    }
+
+    storage.editMessageById(id);
+    system("cls");
+    showMenu();
+    cout << "|   Повідомлення відредаговано!   |" << endl;
+    cout << "+---------------------------------+" << endl;
+}
+
+void searchMessageFlow(MessageStorage& storage) {
+    system("cls");
+    showMenu();
+    string keyword;
+    cout << "Введіть слово для пошуку: ";
+    getline(cin, keyword);
+
+    if (keyword.empty()) {
+        cout << "Слово для пошуку не може бути порожнім!" << endl;
+        return;
+    }
+
+    system("cls");
+    showMenu();
+    storage.searchMessages(keyword);
+}
+
+void deleteMessageFlow(MessageStorage& storage) {
+    system("cls");
+    showMenu();
+    string inputId;
+    cout << "Введіть ID повідомлення для видалення: ";
+    getline(cin, inputId);
+    int id;
+
+    try {
+        id = stoi(inputId);
+    }
+    catch (...) {
+        cout << "Некоректний ID!" << endl;
+        return;
+    }
+
+    storage.deleteMessageById(id);
+}
+
+bool exitFlow(MessageStorage& storage) {
+    system("cls");
+    string saveInput;
+    cout << "Бажаєте зберегти перед виходом? (Y/N): ";
+    getline(cin, saveInput);
+
+    if (saveInput == "Y" || saveInput == "y") {
+        storage.saveToFile();
+    }
+    else if (saveInput != "N" && saveInput != "n") {
+        cout << "Некоректний вибір. Введіть Y або N." << endl;
+        return false;
+    }
+
+    cout << "Вихід..." << endl;
+    return true;
+}
+
+void refreshMenu() {
+    system("cls");
+    showMenu();
 }
 
 
@@ -397,7 +527,7 @@ int main() {
     showMenu();
     while (true) {
         string input;
-        int choice = -1; // Безпечне значення за замовчуванням
+        int choice = -1; 
 
         cout << "Виберіть дію: ";
         getline(cin, input);
@@ -416,159 +546,47 @@ int main() {
         }
 
         switch (choice) {
-        case 1: {
-            system("cls");
-            showMenu();
-            cout << "|            Підказка:            |" << endl;
-            cout << "+---------------------------------+" << endl;
-            cout << "|  Щоб зробити жирний або курсив  |" << endl;
-            cout << "|   скористуйтеся форматуванням   |" << endl;
-            cout << "|       *Жирний* _Курсив_         |" << endl;
-            cout << "+---------------------------------+" << endl;
-
-            string text;
-            cout << "Введіть текст повідомлення: ";
-            getline(cin, text);
-
-            if (text.empty()) {
-                cout << "Повідомлення не може бути порожнім." << endl;
-                break;
-            }
-            if (text.find('|') != string::npos) {
-                cout << "Символ '|' заборонено!" << endl;
-                break;
-            }
-
-            shared_ptr<Message> msg = make_shared<SimpleMessage>(text);
-
-            int stars = count(text.begin(), text.end(), '*');
-            int underscores = count(text.begin(), text.end(), '_');
-            if (stars % 2 != 0) {
-                cout << "⚠️ Увага: непарна кількість * — форматування може бути некоректним." << endl;
-            }
-            if (underscores % 2 != 0) {
-                cout << "⚠️ Увага: непарна кількість _ — форматування може бути некоректним." << endl;
-            }
-
-            storage.addMessage(msg);
-            system("cls");
-            showMenu();
-            cout << "|      Повідомлення додано!       |" << endl;
-            cout << "+---------------------------------+" << endl;
+        case 1:
+            addMessageFlow(storage);
             break;
-        }
 
         case 2:
-            system("cls");
-            showMenu();
+            refreshMenu();
             storage.displayMessages();
             break;
 
         case 3:
-            system("cls");
-            showMenu();
+            refreshMenu();
             storage.saveToFile();
             break;
 
         case 4:
-            system("cls");
-            showMenu();
+            refreshMenu();
             storage.loadFromFile();
             break;
 
         case 5: {
-            system("cls");
-            showMenu();
-            string inputId;
-            cout << "Введіть ID повідомлення для редагування: ";
-            getline(cin, inputId);
-            int id;
-
-            try {
-                id = stoi(inputId);
-            }
-            catch (...) {
-                cout << "Некоректний ID!" << endl;
-                break;
-            }
-
-            storage.editMessageById(id);
-            system("cls");
-            showMenu();
-            cout << "|   Повідомлення відредаговано!   |" << endl;
-            cout << "+---------------------------------+" << endl;
-            break;
+            editMessageFlow(storage); break;
         }
-
         case 6:
-            system("cls");
-            showMenu();
+            refreshMenu();
             storage.clearMessages();
             break;
 
         case 7: {
-            system("cls");
-            showMenu();
-            string keyword;
-            cout << "Введіть слово для пошуку: ";
-            getline(cin, keyword);
-
-            if (keyword.empty()) {
-                cout << "Слово для пошуку не може бути порожнім!" << endl;
-                break;
-            }
-
-            system("cls");
-            showMenu();
-            storage.searchMessages(keyword);
-            break;
+            searchMessageFlow(storage); break;
         }
-
         case 8: {
-            system("cls");
-            showMenu();
-            string inputId;
-            cout << "Введіть ID повідомлення для видалення: ";
-            getline(cin, inputId);
-            int id;
-            system("cls");
-            showMenu();
-            try {
-                id = stoi(inputId);
-            }
-            catch (...) {
-                cout << "Некоректний ID!" << endl;
-                break;
-            }
-
-            storage.deleteMessageById(id);
-            break;
+            deleteMessageFlow(storage); break;
         }
-
         case 9:
-            system("cls");
-            showMenu();
+            refreshMenu();
             storage.showStatistics();
             break;
-
         case 0: {
-            system("cls");
-            string saveInput;
-            cout << "Бажаєте зберегти перед виходом? (Y/N): ";
-            getline(cin, saveInput);
-
-            if (saveInput == "Y" || saveInput == "y") {
-                storage.saveToFile();
-            }
-            else if (saveInput != "N" && saveInput != "n") {
-                cout << "Некоректний вибір. Введіть Y або N." << endl;
-                break;
-            }
-
-            cout << "Вихід..." << endl;
-            return 0;
+            if (exitFlow(storage)) return 0;
+            break;
         }
-
         default:
             cout << "Некоректний вибір, спробуйте знову!" << endl;
         }
