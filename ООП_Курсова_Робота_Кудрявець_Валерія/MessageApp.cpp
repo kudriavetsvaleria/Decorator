@@ -177,7 +177,7 @@ struct MessageComparator {
     }
 };
 
-
+////////////////////////////////////
 class MessageStorage {
 private:
     set<shared_ptr<Message>, MessageComparator> messages;
@@ -213,38 +213,24 @@ public:
         }
     }
 
-    void editMessageById(int idToEdit) {
-        bool found = false;
-        vector<shared_ptr<Message>> temp(messages.begin(), messages.end());
-
-        for (auto& msg : temp) {
+    bool editMessageById(int idToEdit, const string& newText) {
+        for (auto& msg : messages) {
             if (msg->getId() == idToEdit) {
-                found = true;
-                string newText;
-                cout << "Введіть новий текст повідомлення: ";
-                getline(cin, newText);
-
                 shared_ptr<Message> editedMsg = make_shared<SimpleMessage>(newText, idToEdit);
+                messages.erase(msg);
+                messages.insert(editedMsg);
 
-
-                
                 if (idToEdit > Message::getGlobalCounter()) {
                     Message::setGlobalCounter(idToEdit);
                 }
 
-                messages.erase(msg);
-                messages.insert(editedMsg);
-                break;
+                return true;
             }
         }
-
-        if (!found) {
-            system("cls");
-            showMenu();
-            cout << "|  Повідомлення з таким ID нема   |" << endl;
-            cout << "+---------------------------------+" << endl;
-        }
+        return false;
     }
+
+
 
     void deleteMessageById(int idToDelete) {
         bool found = false;
@@ -308,7 +294,13 @@ public:
     void saveToFile() {
         ofstream file(filename);
         for (const auto& msg : messages) {
-            file << "ID: "  << msg->getId() << "|" << msg->getText() << endl;
+            string text = msg->getText();
+            size_t pos = 0;
+            while ((pos = text.find('\n', pos)) != string::npos) {
+                text.replace(pos, 1, "\\n");
+                pos += 2;
+            }
+            file << "ID: " << msg->getId() << "|" << text << endl;
         }
         cout << "|       Переписка збережена!      |" << endl;
         cout << "+---------------------------------+" << endl;
@@ -330,14 +322,22 @@ public:
         while (getline(file, line)) {
             size_t delim = line.find('|');
             if (delim != string::npos) {
-                string idPart = line.substr(0, delim);      
-                string text = line.substr(delim + 1);       
-
+                string idPart = line.substr(0, delim);
+                string text = line.substr(delim + 1);
                 size_t colon = idPart.find(':');
+
                 if (colon != string::npos) {
                     string idStr = idPart.substr(colon + 1);
                     try {
                         int id = stoi(idStr);
+
+                        // Зворотня заміна \\n на реальні переноси
+                        size_t pos = 0;
+                        while ((pos = text.find("\\n", pos)) != string::npos) {
+                            text.replace(pos, 2, "\n");
+                            pos += 1;
+                        }
+
                         shared_ptr<Message> msg = make_shared<SimpleMessage>(text, id);
                         messages.insert(msg);
                         loadedCount++;
@@ -359,6 +359,7 @@ public:
             cout << "+---------------------------------+" << endl;
         }
     }
+
 
 
     void searchMessages(const string& keyword) const {
@@ -392,7 +393,7 @@ public:
     }
 };
 
-
+////////////////////////////////////
 void addMessageFlow(MessageStorage& storage) {
     system("cls");
     showMenu();
@@ -401,16 +402,24 @@ void addMessageFlow(MessageStorage& storage) {
     cout << "|  Щоб зробити жирний або курсив  |" << endl;
     cout << "|   скористуйтеся форматуванням   |" << endl;
     cout << "|       *Жирний* _Курсив_         |" << endl;
+    cout << "| Щоб завершити введення, впишіть |" << endl;
+    cout << "|       /0 на новому рядку        |" << endl;
     cout << "+---------------------------------+" << endl;
 
-    string text;
-    cout << "Введіть текст повідомлення: ";
-    getline(cin, text);
+    cout << "Введіть текст повідомлення:" << endl;
+
+    string line, text;
+    while (true) {
+        getline(cin, line);
+        if (line == "/0") break;
+        text += line + "\n";
+    }
 
     if (text.empty()) {
         cout << "Повідомлення не може бути порожнім." << endl;
         return;
     }
+
     if (text.find('|') != string::npos) {
         cout << "Символ '|' заборонено!" << endl;
         return;
@@ -434,6 +443,7 @@ void addMessageFlow(MessageStorage& storage) {
     cout << "+---------------------------------+" << endl;
 }
 
+
 void editMessageFlow(MessageStorage& storage) {
     system("cls");
     showMenu();
@@ -441,21 +451,65 @@ void editMessageFlow(MessageStorage& storage) {
     cout << "Введіть ID повідомлення для редагування: ";
     getline(cin, inputId);
     int id;
-
+    system("cls");
+    showMenu();
     try {
         id = stoi(inputId);
+        if (id < 0) throw invalid_argument("Negative ID");
     }
     catch (...) {
         cout << "Некоректний ID!" << endl;
         return;
     }
 
-    storage.editMessageById(id);
+    // Зчитування нового тексту в кілька рядків
+    cout << "|            Підказка:            |" << endl;
+    cout << "+---------------------------------+" << endl;
+    cout << "|  Щоб зробити жирний або курсив  |" << endl;
+    cout << "|   скористуйтеся форматуванням   |" << endl;
+    cout << "|       *Жирний* _Курсив_         |" << endl;
+    cout << "| Щоб завершити введення, впишіть |" << endl;
+    cout << "|       /0 на новому рядку        |" << endl;
+    cout << "+---------------------------------+" << endl;
+
+    cout << "Введіть текст нового повідомлення: ";
+    string line, newText;
+    while (true) {
+        getline(cin, line);
+        if (line == "/0") break;
+        newText += line + "\n";
+    }
+
+    if (newText.empty()) {
+        cout << "Повідомлення не може бути порожнім!" << endl;
+        return;
+    }
+
+    if (newText.find('|') != string::npos) {
+        cout << "Символ '|' заборонено!" << endl;
+        return;
+    }
+
+    // Виклик редагування
+    bool success = storage.editMessageById(id, newText);
+    if (success) {
+        shared_ptr<Message> editedMsg = make_shared<SimpleMessage>(newText, id);
+        storage.deleteMessageById(id);        // видалити старе
+        storage.addMessage(editedMsg);        // додати нове з тим самим ID
+    }
+
     system("cls");
     showMenu();
-    cout << "|   Повідомлення відредаговано!   |" << endl;
+    if (success) {
+        cout << "|   Повідомлення відредаговано!   |" << endl;
+    }
+    else {
+        cout << "|  Повідомлення з таким ID нема   |" << endl;
+    }
     cout << "+---------------------------------+" << endl;
 }
+
+
 
 void searchMessageFlow(MessageStorage& storage) {
     system("cls");
@@ -479,6 +533,7 @@ void deleteMessageFlow(MessageStorage& storage) {
     showMenu();
     string inputId;
     cout << "Введіть ID повідомлення для видалення: ";
+
     getline(cin, inputId);
     int id;
 
@@ -549,44 +604,30 @@ int main() {
         case 1:
             addMessageFlow(storage);
             break;
-
         case 2:
             refreshMenu();
             storage.displayMessages();
             break;
-
         case 3:
             refreshMenu();
             storage.saveToFile();
             break;
-
         case 4:
             refreshMenu();
             storage.loadFromFile();
             break;
-
-        case 5: {
-            editMessageFlow(storage); break;
-        }
+        case 5: {editMessageFlow(storage); break;}
         case 6:
             refreshMenu();
             storage.clearMessages();
             break;
-
-        case 7: {
-            searchMessageFlow(storage); break;
-        }
-        case 8: {
-            deleteMessageFlow(storage); break;
-        }
+        case 7: {searchMessageFlow(storage); break;}
+        case 8: {deleteMessageFlow(storage); break;}
         case 9:
             refreshMenu();
             storage.showStatistics();
             break;
-        case 0: {
-            if (exitFlow(storage)) return 0;
-            break;
-        }
+        case 0: {if (exitFlow(storage)) return 0; break;}
         default:
             cout << "Некоректний вибір, спробуйте знову!" << endl;
         }
