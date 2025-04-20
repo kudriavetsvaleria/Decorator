@@ -398,7 +398,7 @@ public:
             cout << "+---------------------------------+" << endl;
         }
         else {
-            cout << "|     Видалення скасовано.        |" << endl;
+            cout << "|       Видалення скасовано       |" << endl;
             cout << "+---------------------------------+" << endl;
         }
     }
@@ -557,8 +557,20 @@ void deleteMessageFlow(MessageStorage& storage) {
         return;
     }
 
-    storage.deleteMessageById(id);
+    char confirm;
+    cout << "Ви впевнені, що хочете видалити повідомлення з ID: " << id << "? (y/n): ";
+    cin >> confirm;
+    cin.ignore(); // очищення буфера
+
+    if (confirm == 'y' || confirm == 'Y') {
+        storage.deleteMessageById(id);
+    }
+    else {
+        cout << "|       Видалення скасовано       |" << endl;
+        cout << "+---------------------------------+" << endl;
+    }
 }
+
 
 bool exitFlow(MessageStorage& storage) {
     system("cls");
