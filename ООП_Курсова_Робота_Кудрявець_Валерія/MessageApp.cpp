@@ -210,6 +210,7 @@ public:
         cout << "+---------------------------------+" << endl;
         for (const auto& msg : messages) {
             msg->display();
+            cout << endl;
         }
     }
 
@@ -301,6 +302,7 @@ public:
                 pos += 2;
             }
             file << "ID: " << msg->getId() << "|" << text << endl;
+            file << "-----------------------------------" << endl;
         }
         cout << "|       Переписка збережена!      |" << endl;
         cout << "+---------------------------------+" << endl;
@@ -384,13 +386,23 @@ public:
         }
     }
 
-   
-
     void clearMessages() {
-        messages.clear();
-        cout << "|        Переписка очищена        |" << endl;
-        cout << "+---------------------------------+" << endl;
+        char confirm;
+        cout << "| Ви впевнені, що хочете видалити всі повідомлення? (y/n): ";
+        cin >> confirm;
+        cin.ignore(); // Очищення буфера
+
+        if (confirm == 'y' || confirm == 'Y') {
+            messages.clear();
+            cout << "|        Переписка очищена        |" << endl;
+            cout << "+---------------------------------+" << endl;
+        }
+        else {
+            cout << "|     Видалення скасовано.        |" << endl;
+            cout << "+---------------------------------+" << endl;
+        }
     }
+
 };
 
 ////////////////////////////////////
@@ -406,7 +418,7 @@ void addMessageFlow(MessageStorage& storage) {
     cout << "|       /0 на новому рядку        |" << endl;
     cout << "+---------------------------------+" << endl;
 
-    cout << "Введіть текст повідомлення:" << endl;
+    cout << "Введіть текст повідомлення: ";
 
     string line, text;
     while (true) {
