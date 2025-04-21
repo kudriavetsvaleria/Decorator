@@ -239,8 +239,6 @@ public:
         return false;
     }
 
-
-
     void deleteMessageById(int idToDelete) {
         bool found = false;
         for (auto it = messages.begin(); it != messages.end(); ++it) {
@@ -261,6 +259,7 @@ public:
             cout << "+----------------------------------+" << endl;
         }
     }
+
 
     void showStatistics() const {
         int totalMessages = messages.size();
@@ -379,7 +378,6 @@ public:
     }
 
 
-
     void searchMessages(const string& keyword) const {
         vector<shared_ptr<Message>> results;
 
@@ -434,7 +432,14 @@ public:
 
 };
 
+
+
 ////////////////////////////////////
+
+bool isCancelled(const string& input) {
+    return input == "/cancel";
+}
+
 void addMessageFlow(MessageStorage& storage) {
     system("cls");
     showMenu();
@@ -445,16 +450,28 @@ void addMessageFlow(MessageStorage& storage) {
     cout << "|       *Жирний* _Курсив_          |" << endl;
     cout << "| Щоб завершити введення, впишіть  |" << endl;
     cout << "|       /0 на новому рядку         |" << endl;
+    cout << "| АБО /cancel — щоб вийти без змін |" << endl;
     cout << "+----------------------------------+" << endl;
+
 
     cout << "Введіть текст повідомлення: ";
 
     string line, text;
     while (true) {
         getline(cin, line);
+        if (isCancelled(line)) {
+            system("cls");
+            showMenu();
+            cout << "|         Дію скасовано!           |" << endl;
+            cout << "+----------------------------------+" << endl;
+            return;
+        }
+
         if (line == "/0") break;
+
         text += line + "\n";
     }
+
 
     if (text.empty()) {
         cout << "Повідомлення не може бути порожнім." << endl;
@@ -507,11 +524,30 @@ void editMessageFlow(MessageStorage& storage) {
         return;
     }
 
+    // Підказка
+    cout << "|             Підказка:            |" << endl;
+    cout << "+----------------------------------+" << endl;
+    cout << "|  Щоб зробити жирний або курсив   |" << endl;
+    cout << "|   скористуйтеся форматуванням    |" << endl;
+    cout << "|       *Жирний* _Курсив_          |" << endl;
+    cout << "| Щоб завершити введення, впишіть  |" << endl;
+    cout << "|       /0 на новому рядку         |" << endl;
+    cout << "| АБО /cancel — щоб вийти без змін |" << endl;
+    cout << "+----------------------------------+" << endl;
+
+    // Введення ID
     string inputId;
     cout << "Введіть ID повідомлення для редагування: ";
     getline(cin, inputId);
-    int id;
+    if (inputId == "/cancel") {
+        system("cls");
+        showMenu();
+        cout << "|    Дію скасовано користувачем    |" << endl;
+        cout << "+----------------------------------+" << endl;
+        return;
+    }
 
+    int id;
     try {
         id = stoi(inputId);
     }
@@ -524,54 +560,40 @@ void editMessageFlow(MessageStorage& storage) {
         return;
     }
 
-    int minId = 1;
-    int maxId = Message::getGlobalCounter();
-
-    if (id <= 0 || id > maxId) {
-        system("cls");
-        showMenu();
-        cout << "|         ID поза межами!          |" << endl;
-        cout << "|      Введіть ID від " << minId << " до " << maxId << "       |" << endl;
-        cout << "+----------------------------------+" << endl;
-        return;
-    }
-
-    // Перевірка на існування такого ID
-    bool exists = false;
+    // Пошук повідомлення з таким ID
+    shared_ptr<Message> originalMsg = nullptr;
     for (const auto& msg : storage.getMessages()) {
         if (msg->getId() == id) {
-            exists = true;
+            originalMsg = msg;
             break;
         }
     }
 
-    if (!exists) {
+    if (!originalMsg) {
         system("cls");
         showMenu();
         cout << "|  Повідомлення з таким ID нема!  |" << endl;
-        cout << "|     Введіть ID від " << minId << " до " << maxId << "         |" << endl;
         cout << "+----------------------------------+" << endl;
         return;
     }
 
-    // Зчитування нового тексту
-    cout << "|             Підказка:            |" << endl;
-    cout << "+----------------------------------+" << endl;
-    cout << "|  Щоб зробити жирний або курсив   |" << endl;
-    cout << "|   скористуйтеся форматуванням    |" << endl;
-    cout << "|       *Жирний* _Курсив_          |" << endl;
-    cout << "| Щоб завершити введення, впишіть  |" << endl;
-    cout << "|       /0 на новому рядку         |" << endl;
-    cout << "+----------------------------------+" << endl;
-
-    cout << "Введіть текст нового повідомлення: ";
+    // Введення нового тексту
     string line, newText;
+    cout << "Введіть новий текст повідомлення:";
     while (true) {
         getline(cin, line);
+        if (line == "/cancel") {
+            system("cls");
+            showMenu();
+            cout << "|       Редагування скасовано!     |" << endl;
+            cout << "+----------------------------------+" << endl;
+            return;
+        }
         if (line == "/0") break;
         newText += line + "\n";
     }
 
+    // Перевірки
     if (newText.empty()) {
         system("cls");
         showMenu();
@@ -589,22 +611,14 @@ void editMessageFlow(MessageStorage& storage) {
         return;
     }
 
-    // Редагування
-    bool success = storage.editMessageById(id, newText);
-    if (success) {
-        shared_ptr<Message> editedMsg = make_shared<SimpleMessage>(newText, id);
-        storage.deleteMessageById(id);
-        storage.addMessage(editedMsg);
-    }
+    // Створення нового повідомлення й оновлення
+    shared_ptr<Message> editedMsg = make_shared<SimpleMessage>(newText, id);
+    storage.deleteMessageById(id);
+    storage.addMessage(editedMsg);
 
     system("cls");
     showMenu();
-    if (success) {
-        cout << "|    Повідомлення відредаговано!   |" << endl;
-    }
-    else {
-        cout << "|   Помилка при редагуванні!       |" << endl;
-    }
+    cout << "|    Повідомлення відредаговано!   |" << endl;
     cout << "+----------------------------------+" << endl;
 }
 
@@ -612,12 +626,32 @@ void editMessageFlow(MessageStorage& storage) {
 void searchMessageFlow(MessageStorage& storage) {
     system("cls");
     showMenu();
+
+    // Підказка
+    cout << "|             Підказка:            |" << endl;
+    cout << "+----------------------------------+" << endl;
+    cout << "|     Введіть слово, для пошуку    |" << endl;
+    cout << "|     /cancel — вихід без змін     |" << endl;
+    cout << "+----------------------------------+" << endl;
+
     string keyword;
     cout << "Введіть слово для пошуку: ";
     getline(cin, keyword);
 
+    if (keyword == "/cancel") {
+        system("cls");
+        showMenu();
+        cout << "|         Пошук скасовано!         |" << endl;
+        cout << "+----------------------------------+" << endl;
+        return;
+    }
+
     if (keyword.empty()) {
-        cout << "Слово для пошуку не може бути порожнім!" << endl;
+        system("cls");
+        showMenu();
+        cout << "|  Слово для пошуку не може бути   |" << endl;
+        cout << "|            порожнім!             |" << endl;
+        cout << "+----------------------------------+" << endl;
         return;
     }
 
@@ -625,6 +659,7 @@ void searchMessageFlow(MessageStorage& storage) {
     showMenu();
     storage.searchMessages(keyword);
 }
+
 
 void deleteMessageFlow(MessageStorage& storage) {
     system("cls");
@@ -638,15 +673,32 @@ void deleteMessageFlow(MessageStorage& storage) {
         return;
     }
 
+    // Підказка
+    cout << "|             Підказка:            |" << endl;
+    cout << "+----------------------------------+" << endl;
+    cout << "|  Введіть ID повідомлення, яке    |" << endl;
+    cout << "|        бажаєте видалити          |" << endl;
+    cout << "| Введіть /cancel — вихід без змін |" << endl;
+    cout << "+----------------------------------+" << endl;
+
     string inputId;
     cout << "Введіть ID повідомлення для видалення: ";
     getline(cin, inputId);
-    int id;
 
+    if (inputId == "/cancel") {
+        system("cls");
+        showMenu();
+        cout << "|       Видалення скасовано        |" << endl;
+        cout << "+----------------------------------+" << endl;
+        return;
+    }
+
+    int id;
     try {
         id = stoi(inputId);
-        if (id <= 0 || id > Message::getGlobalCounter())
+        if (id <= 0 || id > Message::getGlobalCounter()) {
             throw out_of_range("ID поза межами");
+        }
     }
     catch (...) {
         int minId = 1;
@@ -679,23 +731,32 @@ void deleteMessageFlow(MessageStorage& storage) {
         return;
     }
 
-    char confirm;
+    // Підтвердження
+    string confirm;
     system("cls");
     showMenu();
     cout << "|      Ви впевнені, що хочете      |" << endl;
     cout << "|  видалити повідомлення з ID: " << id << "?  |" << endl;
+    cout << "|    (Y — так ; N — ні ; /cancel)  |" << endl;
     cout << "+----------------------------------+" << endl;
-    cout << "(Y/N): ";
-    cin >> confirm;
-    cin.ignore(); // очищення буфера
+    cout << "Ваш вибір: ";
+    getline(cin, confirm);
 
-    if (confirm == 'y' || confirm == 'Y') {
+    if (confirm == "/cancel" || confirm == "n" || confirm == "N") {
+        system("cls");
+        showMenu();
+        cout << "|       Видалення скасовано        |" << endl;
+        cout << "+----------------------------------+" << endl;
+        return;
+    }
+
+    if (confirm == "y" || confirm == "Y") {
         storage.deleteMessageById(id);
     }
     else {
         system("cls");
         showMenu();
-        cout << "|       Видалення скасовано        |" << endl;
+        cout << "|       Некоректне підтвердження   |" << endl;
         cout << "+----------------------------------+" << endl;
     }
 }
@@ -727,6 +788,8 @@ void refreshMenu() {
 }
 
 
+
+
 int main() {
     SetConsoleOutputCP(1251);
     SetConsoleCP(1251);
@@ -746,6 +809,8 @@ int main() {
             choice = stoi(input);
         }
         catch (...) {
+            system("cls");
+            showMenu();
             cout << "|         Некоректний вибір        |" << endl;
             cout << "|     Введіть число від 0 до 9     |" << endl;
             cout << "+----------------------------------+" << endl;
@@ -753,6 +818,8 @@ int main() {
         }
 
         if (choice < 0 || choice > 9) {
+            system("cls");
+            showMenu();
             cout << "| Введіть число в межах від 0 до 9 |" << endl;
             cout << "+----------------------------------+" << endl;
             continue;
