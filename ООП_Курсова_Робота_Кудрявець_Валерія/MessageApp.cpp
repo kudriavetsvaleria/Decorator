@@ -6,6 +6,7 @@
 #include <memory>
 #include <windows.h>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -176,6 +177,71 @@ struct MessageComparator {
         return lhs->getId() < rhs->getId(); 
     }
 };
+
+void highlightMatch(const string& text, const string& keyword, int id) {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(hConsole, &csbi);
+    WORD defaultColor = csbi.wAttributes;
+    WORD boldColor = 0x00; // чорний текст (білий фон — за замовчуванням)
+    WORD highlightColor = BACKGROUND_RED | BACKGROUND_GREEN; // жовтий фон
+
+    // Зниження регістру для пошуку збігу
+    string loweredText = text;
+    string loweredKeyword = keyword;
+    transform(loweredText.begin(), loweredText.end(), loweredText.begin(), ::tolower);
+    transform(loweredKeyword.begin(), loweredKeyword.end(), loweredKeyword.begin(), ::tolower);
+
+    cout << "ID: " << id << " - ";
+
+    bool bold = false;
+    bool italic = false;
+
+    for (size_t i = 0; i < text.length(); ++i) {
+        // ФОРМАТУВАННЯ: жирний *
+        if (text[i] == '*' && (i == 0 || text[i - 1] != '\\')) {
+            bold = !bold;
+            SetConsoleTextAttribute(hConsole, bold ? boldColor : defaultColor);
+            continue;
+        }
+
+        // ФОРМАТУВАННЯ: курсив _
+        if (text[i] == '_' && (i == 0 || text[i - 1] != '\\')) {
+            italic = !italic;
+            cout << (italic ? "\033[3m" : "\033[0m");
+            if (!italic && bold) SetConsoleTextAttribute(hConsole, boldColor);
+            else if (!italic) SetConsoleTextAttribute(hConsole, defaultColor);
+            continue;
+        }
+
+        // Пошук збігу з keyword (без урахування регістру)
+        size_t remaining = text.length() - i;
+        if (remaining >= keyword.length()) {
+            string sub = loweredText.substr(i, keyword.length());
+            if (sub == loweredKeyword) {
+                SetConsoleTextAttribute(hConsole, highlightColor);
+                for (size_t j = 0; j < keyword.length(); ++j, ++i) {
+                    cout << text[i];
+                }
+                --i; // компенсуємо зайвий ++ у циклі
+                SetConsoleTextAttribute(hConsole, bold ? boldColor : defaultColor);
+                if (italic) cout << "\033[3m";
+                continue;
+            }
+        }
+
+        cout << text[i];
+    }
+
+    // Скидання кольорів і стилів
+    SetConsoleTextAttribute(hConsole, defaultColor);
+    cout << "\033[0m" << endl;
+
+    // Гарантовано виводимо роздільник у стандартному кольорі
+    SetConsoleTextAttribute(hConsole, defaultColor);
+    cout << "+----------------------------------+" << endl;
+}
+
 
 ////////////////////////////////////
 class MessageStorage {
@@ -365,7 +431,7 @@ public:
             system("cls");
             showMenu();
             cout << "|     Жодне повідомлення не було   |" << endl;
-            cout << "|            завантажено           |" << endl;
+            cout << "|           завантажено            |" << endl;
             cout << "+----------------------------------+" << endl;
         }
         else {
@@ -376,12 +442,22 @@ public:
         }
     }
 
-
     void searchMessages(const string& keyword) const {
         vector<shared_ptr<Message>> results;
 
+        // Зниження регістру ключового слова
+        string loweredKeyword = keyword;
+        transform(loweredKeyword.begin(), loweredKeyword.end(), loweredKeyword.begin(), ::tolower);
+
         for (const auto& msg : messages) {
-            if (msg->getText().find(keyword) != string::npos) {
+            string originalText = msg->getText();
+
+            // Зниження регістру тексту повідомлення
+            string loweredText = originalText;
+            transform(loweredText.begin(), loweredText.end(), loweredText.begin(), ::tolower);
+
+            size_t pos = loweredText.find(loweredKeyword);
+            if (pos != string::npos) {
                 results.push_back(msg);
             }
         }
@@ -392,7 +468,7 @@ public:
             cout << "|        Результати пошуку         |" << endl;
             cout << "+----------------------------------+" << endl;
             for (const auto& msg : results) {
-                msg->display();
+                highlightMatch(msg->getText(), keyword, msg->getId());
             }
         }
         else {
@@ -402,6 +478,8 @@ public:
             cout << "+----------------------------------+" << endl;
         }
     }
+
+
 
     void clearMessages() {
         char confirm;
@@ -431,6 +509,7 @@ public:
 
 };
 
+
 ////////////////////////////////////
 
 bool isCancelled(const string& input) {
@@ -459,7 +538,7 @@ void addMessageFlow(MessageStorage& storage) {
         if (isCancelled(line)) {
             system("cls");
             showMenu();
-            cout << "|         Дію скасовано!           |" << endl;
+            cout << "|          Дію скасовано!          |" << endl;
             cout << "+----------------------------------+" << endl;
             return;
         }
@@ -472,7 +551,7 @@ void addMessageFlow(MessageStorage& storage) {
             cout << "|             Увага!               |" << endl;
             cout << "|        Перевищено леміт          |" << endl;
             cout << "|          150 символів!           |" << endl;
-            cout << "|    Повідомлення не збережено.    |" << endl;
+            cout << "|    Повідомлення не збережено     |" << endl;
             cout << "+----------------------------------+" << endl;
             return;
         }
@@ -498,7 +577,7 @@ void addMessageFlow(MessageStorage& storage) {
         system("cls");
         showMenu();
         cout << "|       Символ '|' заборонено!     |" << endl;
-        cout << "|    Повідомлення не збережено.    |" << endl;
+        cout << "|    Повідомлення не збережено     |" << endl;
         cout << "+----------------------------------+" << endl;
         return;
     }
