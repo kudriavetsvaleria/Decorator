@@ -590,16 +590,17 @@ void editMessageFlow(MessageStorage& storage) {
     if (!originalMsg) {
         system("cls");
         showMenu();
-        cout << "|  Повідомлення з таким ID нема!  |" << endl;
+        cout << "|  Повідомлення з таким ID нема!   |" << endl;
         cout << "+----------------------------------+" << endl;
         return;
     }
 
     // Введення нового тексту
     string line, newText;
-    cout << "Введіть новий текст повідомлення:";
+    cout << "Введіть новий текст повідомлення:" << endl;
     while (true) {
         getline(cin, line);
+
         if (line == "/cancel") {
             system("cls");
             showMenu();
@@ -607,11 +608,28 @@ void editMessageFlow(MessageStorage& storage) {
             cout << "+----------------------------------+" << endl;
             return;
         }
+
         if (line == "/0") break;
+
+        if (newText.length() + line.length() + 1 > 150) {
+            system("cls");
+            showMenu();
+            cout << "|             Увага!               |" << endl;
+            cout << "|        Перевищено леміт          |" << endl;
+            cout << "|          150 символів!           |" << endl;
+            cout << "|  Редагування повідомлення скас.  |" << endl;
+            cout << "+----------------------------------+" << endl;
+            return;
+        }
+
         newText += line + "\n";
     }
 
-    // Перевірки
+    // Видаляємо останній символ \n, якщо він є
+    if (!newText.empty() && newText.back() == '\n') {
+        newText.pop_back();
+    }
+
     if (newText.empty()) {
         system("cls");
         showMenu();
@@ -625,11 +643,29 @@ void editMessageFlow(MessageStorage& storage) {
         system("cls");
         showMenu();
         cout << "|       Символ '|' заборонено!     |" << endl;
+        cout << "|   Повідомлення не відредаговано  |" << endl;
         cout << "+----------------------------------+" << endl;
         return;
     }
 
-    // Створення нового повідомлення й оновлення
+    // Перевірка парності символів форматування
+    int stars = count(newText.begin(), newText.end(), '*');
+    int underscores = count(newText.begin(), newText.end(), '_');
+
+    if (stars % 2 != 0 || underscores % 2 != 0) {
+        system("cls");
+        showMenu();
+        cout << "|             Увага!               |" << endl;
+        if (stars % 2 != 0)
+            cout << "|       непарна кількість *        |" << endl;
+        if (underscores % 2 != 0)
+            cout << "|       непарна кількість _        |" << endl;
+        cout << "|      форматування може бути      |" << endl;
+        cout << "|           некоректним!           |" << endl;
+        cout << "+----------------------------------+" << endl;
+    }
+
+    // Заміна повідомлення
     shared_ptr<Message> editedMsg = make_shared<SimpleMessage>(newText, id);
     storage.deleteMessageById(id);
     storage.addMessage(editedMsg);
@@ -639,6 +675,7 @@ void editMessageFlow(MessageStorage& storage) {
     cout << "|    Повідомлення відредаговано!   |" << endl;
     cout << "+----------------------------------+" << endl;
 }
+
 
 
 void searchMessageFlow(MessageStorage& storage) {
