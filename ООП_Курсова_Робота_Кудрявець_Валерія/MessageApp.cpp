@@ -218,7 +218,7 @@ public:
         cout << "+----------------------------------+" << endl;
         for (const auto& msg : messages) {
             msg->display();
-            cout << endl;
+            cout << "+----------------------------------+" << endl;
         }
     }
 
@@ -309,7 +309,6 @@ public:
                 pos += 2;
             }
             file << "ID: " << msg->getId() << "|" << text << endl;
-            file << "-----------------------------------" << endl;
         }
         system("cls");
         showMenu();
