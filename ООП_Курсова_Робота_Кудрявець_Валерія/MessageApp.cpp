@@ -431,8 +431,6 @@ public:
 
 };
 
-
-
 ////////////////////////////////////
 
 bool isCancelled(const string& input) {
@@ -452,12 +450,12 @@ void addMessageFlow(MessageStorage& storage) {
     cout << "| АБО /cancel — щоб вийти без змін |" << endl;
     cout << "+----------------------------------+" << endl;
 
-
     cout << "Введіть текст повідомлення: ";
 
     string line, text;
     while (true) {
         getline(cin, line);
+
         if (isCancelled(line)) {
             system("cls");
             showMenu();
@@ -468,49 +466,70 @@ void addMessageFlow(MessageStorage& storage) {
 
         if (line == "/0") break;
 
+        if (text.length() + line.length() + 1 > 150) {
+            system("cls");
+            showMenu();
+            cout << "|             Увага!               |" << endl;
+            cout << "|        Перевищено леміт          |" << endl;
+            cout << "|          150 символів!           |" << endl;
+            cout << "|    Повідомлення не збережено.    |" << endl;
+            cout << "+----------------------------------+" << endl;
+            return;
+        }
+
         text += line + "\n";
     }
 
+    // Видаляємо останній \n, якщо він є
+    if (!text.empty() && text.back() == '\n') {
+        text.pop_back();
+    }
 
     if (text.empty()) {
-        cout << "Повідомлення не може бути порожнім." << endl;
+        system("cls");
+        showMenu();
+        cout << "|       Повідомлення не може       |" << endl;
+        cout << "|          бути порожнім!          |" << endl;
+        cout << "+----------------------------------+" << endl;
         return;
     }
 
     if (text.find('|') != string::npos) {
-        cout << "Символ '|' заборонено!" << endl;
+        system("cls");
+        showMenu();
+        cout << "|       Символ '|' заборонено!     |" << endl;
+        cout << "|    Повідомлення не збережено.    |" << endl;
+        cout << "+----------------------------------+" << endl;
         return;
     }
 
-    shared_ptr<Message> msg = make_shared<SimpleMessage>(text);
-
+    // Перевірка парності символів форматування
     int stars = count(text.begin(), text.end(), '*');
     int underscores = count(text.begin(), text.end(), '_');
-    if (stars % 2 != 0) {
+
+    if (stars % 2 != 0 || underscores % 2 != 0) {
         system("cls");
         showMenu();
         cout << "|             Увага!               |" << endl;
-        cout << "|       непарна кількість *        |" << endl;
-        cout << "|      форматування може бути      |" << endl;
-        cout << "|           некоректним!           |" << endl;
-        cout << "+----------------------------------+" << endl;
-    }
-    if (underscores % 2 != 0) {
-        system("cls");
-        showMenu();
-        cout << "|             Увага!               |" << endl;
-        cout << "|       непарна кількість _        |" << endl;
+        if (stars % 2 != 0)
+            cout << "|       непарна кількість *        |" << endl;
+        if (underscores % 2 != 0)
+            cout << "|       непарна кількість _        |" << endl;
         cout << "|      форматування може бути      |" << endl;
         cout << "|           некоректним!           |" << endl;
         cout << "+----------------------------------+" << endl;
     }
 
+    shared_ptr<Message> msg = make_shared<SimpleMessage>(text);
     storage.addMessage(msg);
+
     system("cls");
     showMenu();
     cout << "|       Повідомлення додано!       |" << endl;
     cout << "+----------------------------------+" << endl;
 }
+
+
 
 void editMessageFlow(MessageStorage& storage) {
     system("cls");
