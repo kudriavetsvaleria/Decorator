@@ -336,29 +336,58 @@ public:
             string txt = msg->getText();
             totalChars += txt.length();
 
-            // Рахуємо слова
-            stringstream ss(txt);
-            string word;
-            while (ss >> word) {
-                totalWords++;
+            bool inBold = false, inItalic = false;
+            string currentWord;
+            int localBold = 0, localItalic = 0;
+
+            for (size_t i = 0; i <= txt.length(); ++i) {
+                char ch = (i < txt.length()) ? txt[i] : ' '; // щоб обробити останнє слово
+
+                if (ch == '*' && (i == 0 || txt[i - 1] != '\\')) {
+                    if (!currentWord.empty()) {
+                        if (inBold) localBold++;
+                        else if (inItalic) localItalic++;
+                        else totalWords++;
+                        currentWord.clear();
+                    }
+                    inBold = !inBold;
+                    continue;
+                }
+
+                if (ch == '_' && (i == 0 || txt[i - 1] != '\\')) {
+                    if (!currentWord.empty()) {
+                        if (inBold) localBold++;
+                        else if (inItalic) localItalic++;
+                        else totalWords++;
+                        currentWord.clear();
+                    }
+                    inItalic = !inItalic;
+                    continue;
+                }
+
+                if (isspace((unsigned char)ch) || ispunct((unsigned char)ch)) {
+                    if (!currentWord.empty()) {
+                        if (inBold) localBold++;
+                        else if (inItalic) localItalic++;
+                        else totalWords++;
+                        currentWord.clear();
+                    }
+                }
+                else {
+                    currentWord += ch;
+                }
             }
 
-            // Рахуємо * і _ по всьому тексту
-            int boldCount = count(txt.begin(), txt.end(), '*');
-            int italicCount = count(txt.begin(), txt.end(), '_');
-
-            boldWords += boldCount / 2;
-            italicWords += italicCount / 2;
+            boldWords += localBold;
+            italicWords += localItalic;
         }
-
-
 
         cout << "|        Статистика чату           |" << endl;
         cout << "+----------------------------------+" << endl;
         cout << "| Всього повідомлень          " << setw(4) << totalMessages << " |" << endl;
         cout << "| Загальна кількість слів     " << setw(4) << totalWords << " |" << endl;
-        cout << "| Фрагментів жирного          " << setw(4) << boldWords << " |" << endl;
-        cout << "| Фрагментів курсиву          " << setw(4) << italicWords << " |" << endl;
+        cout << "| Слів у *жирному*            " << setw(4) << boldWords << " |" << endl;
+        cout << "| Слів у _курсиві_            " << setw(4) << italicWords << " |" << endl;
         cout << "| Загальна кількість символів " << setw(4) << totalChars << " |" << endl;
         cout << "+----------------------------------+" << endl;
     }
@@ -577,7 +606,7 @@ void addMessageFlow(MessageStorage& storage) {
         system("cls");
         showMenu();
         cout << "|       Символ '|' заборонено!     |" << endl;
-        cout << "|    Повідомлення не збережено     |" << endl;
+        cout << "|     Повідомлення не збережено    |" << endl;
         cout << "+----------------------------------+" << endl;
         return;
     }
@@ -766,6 +795,7 @@ void searchMessageFlow(MessageStorage& storage) {
     cout << "+----------------------------------+" << endl;
     cout << "|     Введіть слово, для пошуку    |" << endl;
     cout << "|     /cancel — вихід без змін     |" << endl;
+    cout << "|   Програма чуттєва до регістру!  |" << endl;
     cout << "+----------------------------------+" << endl;
 
     string keyword;
@@ -825,6 +855,7 @@ void deleteMessageFlow(MessageStorage& storage) {
         cout << "|       Видалення скасовано        |" << endl;
         cout << "+----------------------------------+" << endl;
         return;
+
     }
 
     int id;
@@ -833,6 +864,7 @@ void deleteMessageFlow(MessageStorage& storage) {
         if (id <= 0 || id > Message::getGlobalCounter()) {
             throw out_of_range("ID поза межами");
         }
+
     }
     catch (...) {
         int minId = 1;
@@ -843,6 +875,7 @@ void deleteMessageFlow(MessageStorage& storage) {
         cout << "|      Введіть ID від " << minId << " до " << maxId << "       |" << endl;
         cout << "+----------------------------------+" << endl;
         return;
+
     }
 
     // Перевірка: чи існує повідомлення з таким ID
@@ -852,6 +885,7 @@ void deleteMessageFlow(MessageStorage& storage) {
             exists = true;
             break;
         }
+
     }
 
     if (!exists) {
@@ -882,6 +916,7 @@ void deleteMessageFlow(MessageStorage& storage) {
         cout << "|       Видалення скасовано        |" << endl;
         cout << "+----------------------------------+" << endl;
         return;
+
     }
 
     if (confirm == "y" || confirm == "Y") {
@@ -893,6 +928,7 @@ void deleteMessageFlow(MessageStorage& storage) {
         cout << "|       Некоректне підтвердження   |" << endl;
         cout << "+----------------------------------+" << endl;
     }
+
 }
 
 
