@@ -15,6 +15,7 @@ This course work shows how object behavior can be dynamically extended without m
 <img src="./assets/preview.gif" width="50%" />
 
 </div>
+
 ---
 
 ## 🚀 What it Does
