@@ -6,10 +6,10 @@
 
 # Decorator — C++ Design Pattern Course Project
 
-A simple C++ project demonstrating the **Decorator design pattern** in action.  
-This course work shows how object behavior can be dynamically extended without modifying existing classes.
+A console application written in **C++** to demonstrate the **Decorator design pattern**. The project shows how object behavior can be dynamically extended without modifying their original classes.
 
 ---
+
 <div align="center">
 
 <img src="./assets/preview.gif" width="50%" />
@@ -18,19 +18,38 @@ This course work shows how object behavior can be dynamically extended without m
 
 ---
 
-## 🚀 What it Does
+## ✨ Features
 
-- Shows an implementation of the **Decorator pattern**  
-- Uses C++ and core **OOP principles**  
-- Helps visualize how additional behavior can be attached at runtime
+- **Decorator Pattern**: Adding new behavior to objects through wrapping:
+  - Base components
+  - Concrete decorators
+  - Dynamic behavior extension
+- **Flexible Structure**: Easily add new functionality to existing classes without altering their code.
+- **Extensibility**: Easily create new decorators for different types of behavior.
 
 ---
 
-## 🛠️ How It Works
+## 🏗️ Design Pattern
 
-The Decorator pattern allows you to **wrap objects** so you can add functionality **without altering their structure**.  
-In this project, you’ll find:
+This project implements the **Decorator** pattern, which allows dynamically adding new functionality to objects without modifying their base code.
 
-- Base components  
-- Concrete decorators  
-- Example usage demonstrating extension of behavior  
+1.  **Base components** — the core classes without added functionality.
+2.  **Concrete decorators** — classes that add additional features.
+3.  **Usage examples** — applying decorators to extend behavior.
+
+---
+
+## 🚀 How to Run
+
+1.  Open the `CourseWork_Decorator.sln` solution in **Visual Studio**.
+2.  Choose the **Release** or **Debug** configuration.
+3.  Build the solution (Build -> Rebuild Solution).
+4.  Run the application (F5).
+
+---
+
+## 🛠️ Tech Stack
+
+- **Language**: C++17
+- **IDE**: Visual Studio 2022
+- **Libraries**: STL (Smart Pointers, Vectors, Sets, Streams)
