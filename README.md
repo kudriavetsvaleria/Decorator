@@ -10,9 +10,11 @@ A simple C++ project demonstrating the **Decorator design pattern** in action.
 This course work shows how object behavior can be dynamically extended without modifying existing classes.
 
 ---
+<div align="center">
 
-![Preview](./assets/preview.gif)
+<img src="./assets/preview.gif" width="50%" />
 
+</div>
 ---
 
 ## 🚀 What it Does
